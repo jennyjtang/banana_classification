@@ -1,47 +1,22 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torchvision import models
 import numpy as np
 from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Original CNN
 class BananaCNN(nn.Module):
+    """Original model with MaxPooling"""
     def __init__(self):
         super().__init__()
-
         self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-
         self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
         self.conv3 = nn.Conv2d(32, 64, 3, padding=1)
-
         self.fc1 = nn.Linear(64 * 28 * 28, 128)  
-        self.fc2 = nn.Linear(128, 2)  # unripe vs ripe
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(F.relu(self.conv3(x)))
-
-        x = x.view(x.size(0), -1)
-
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-# ==================== Model 2: Average Pooling CNN ====================
-class BananaCNN_AvgPool(nn.Module):
-    """Uses Average Pooling instead of Max Pooling"""
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
-        self.pool = nn.AvgPool2d(2, 2)  # Average pooling
-        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
-        self.conv3 = nn.Conv2d(32, 64, 3, padding=1)
-        self.fc1 = nn.Linear(64 * 28 * 28, 128)
         self.fc2 = nn.Linear(128, 2)
         
     def forward(self, x):
@@ -53,29 +28,7 @@ class BananaCNN_AvgPool(nn.Module):
         x = self.fc2(x)
         return x
 
-# ==================== Model 3: Mixed Pooling CNN ====================
-class BananaCNN_MixedPool(nn.Module):
-    """Uses both Max and Average pooling"""
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
-        self.maxpool = nn.MaxPool2d(2, 2)
-        self.avgpool = nn.AvgPool2d(2, 2)
-        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
-        self.conv3 = nn.Conv2d(32, 64, 3, padding=1)
-        self.fc1 = nn.Linear(64 * 28 * 28, 128)
-        self.fc2 = nn.Linear(128, 2)
-        
-    def forward(self, x):
-        x = self.maxpool(F.relu(self.conv1(x)))  # Max for first layer
-        x = self.avgpool(F.relu(self.conv2(x)))  # Avg for second
-        x = self.maxpool(F.relu(self.conv3(x)))  # Max for third
-        x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-# ==================== Model 4: Deeper CNN with Batch Normalization ====================
+# ==================== Model 2: Deeper CNN with Batch Normalization ====================
 class BananaCNN_Deep(nn.Module):
     """Deeper model with BatchNorm and Dropout"""
     def __init__(self):
