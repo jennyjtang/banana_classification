@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from src.cnn import BananaCNN
+from src.cnn import BananaCNN_GlobalAvgPool
 from sklearn.metrics import classification_report
 
 def train_model(train_loader, val_loader, test_loader, epochs=5, lr=1e-3, save_path='banana_model.pth'):
@@ -9,7 +9,7 @@ def train_model(train_loader, val_loader, test_loader, epochs=5, lr=1e-3, save_p
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Training on device: {device}")
     
-    model = BananaCNN().to(device)
+    model = BananaCNN_GlobalAvgPool().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 

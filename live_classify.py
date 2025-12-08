@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from torchvision import transforms
 from PIL import Image
-from src.cnn import BananaCNN
+from src.cnn import BananaCNN_GlobalAvgPool
 from color_analyzer import BananaColorAnalyzer
 
 class LiveBananaClassifier:
@@ -22,10 +22,11 @@ class LiveBananaClassifier:
         
         # Results storage
         self.current_result = None
+        self.detected_bbox = None  # Store detected banana bounding box
         
         # Load the trained CNN model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = BananaCNN()
+        self.model = BananaCNN_GlobalAvgPool()
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.to(self.device)
         self.model.eval()
@@ -41,6 +42,144 @@ class LiveBananaClassifier:
         ])
         
         self.class_names = ['Unripe', 'Ripe']
+    
+    def detect_banana(self, frame):
+        """
+        Detect banana in frame using color-based segmentation and shape analysis
+        Returns bounding box (x, y, w, h) or None if not detected
+        """
+        # Convert to HSV for better color detection
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        # Define color ranges for bananas (yellow/green/brown)
+        # Yellow bananas
+        lower_yellow = np.array([20, 40, 40])
+        upper_yellow = np.array([40, 255, 255])
+        
+        # Green bananas
+        lower_green = np.array([35, 40, 40])
+        upper_green = np.array([85, 255, 255])
+        
+        # Brown/darker bananas
+        lower_brown = np.array([10, 40, 20])
+        upper_brown = np.array([25, 255, 200])
+        
+        # Create masks
+        mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+        mask_green = cv2.inRange(hsv, lower_green, upper_green)
+        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+        
+        # Combine color masks
+        color_mask = cv2.bitwise_or(mask_yellow, mask_green)
+        color_mask = cv2.bitwise_or(color_mask, mask_brown)
+        
+        # Edge detection to help separate banana from background regardless of color
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        edges = cv2.Canny(blurred, 30, 100)
+        
+        # Dilate edges to create connected regions
+        kernel_edge = np.ones((3, 3), np.uint8)
+        edges_dilated = cv2.dilate(edges, kernel_edge, iterations=2)
+        
+        # Combine color and edge information
+        # This helps detect banana even against similar-colored backgrounds
+        mask = cv2.bitwise_or(color_mask, edges_dilated)
+        
+        # Morphological operations to clean up mask
+        kernel = np.ones((5, 5), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        
+        # Refine mask by keeping only regions that have significant color match
+        # This prevents pure edge detections from non-banana objects
+        mask = cv2.bitwise_and(mask, cv2.dilate(color_mask, kernel, iterations=3))
+        
+        # Find contours
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours:
+            return None
+        
+        # Find best banana candidate based on shape characteristics
+        best_candidate = None
+        best_score = 0
+        
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            
+            # Filter by minimum area
+            if area < 1000:
+                continue
+            
+            # Get bounding rectangle
+            x, y, w, h = cv2.boundingRect(contour)
+            
+            # Calculate aspect ratio (bananas are elongated)
+            aspect_ratio = max(w, h) / (min(w, h) + 1e-5)
+            
+            # Calculate extent (ratio of contour area to bounding box area)
+            # Bananas typically have extent between 0.5-0.8 due to their curved shape
+            rect_area = w * h
+            extent = area / (rect_area + 1e-5)
+            
+            # Approximate contour to detect curvature
+            perimeter = cv2.arcLength(contour, True)
+            epsilon = 0.02 * perimeter
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+            
+            # Calculate solidity (convexity)
+            hull = cv2.convexHull(contour)
+            hull_area = cv2.contourArea(hull)
+            solidity = area / (hull_area + 1e-5)
+            
+            # Score based on banana-like characteristics:
+            # - Elongated shape (aspect ratio 2.0-6.0)
+            # - Curved/not rectangular (extent 0.4-0.8)
+            # - Somewhat convex but not perfectly (solidity 0.7-0.95)
+            # - Not too many sharp corners (fewer approximation points)
+            
+            score = 0
+            
+            # Aspect ratio scoring (prefer elongated shapes)
+            if 2.0 <= aspect_ratio <= 6.0:
+                score += 30
+            elif 1.5 <= aspect_ratio < 2.0 or 6.0 < aspect_ratio <= 8.0:
+                score += 15
+            
+            # Extent scoring (curved, not filling entire bbox)
+            if 0.5 <= extent <= 0.8:
+                score += 25
+            elif 0.4 <= extent < 0.5 or 0.8 < extent <= 0.85:
+                score += 10
+            
+            # Solidity scoring (somewhat convex)
+            if 0.75 <= solidity <= 0.95:
+                score += 20
+            elif 0.65 <= solidity < 0.75:
+                score += 10
+            
+            # Size scoring (larger is better)
+            size_score = min(25, area / 500)
+            score += size_score
+            
+            if score > best_score:
+                best_score = score
+                best_candidate = (x, y, w, h)
+        
+        # Only return detection if score is reasonable
+        if best_candidate is None or best_score < 40:
+            return None
+        
+        # Add padding around detection
+        x, y, w, h = best_candidate
+        padding = 20
+        x = max(0, x - padding)
+        y = max(0, y - padding)
+        w = min(frame.shape[1] - x, w + 2 * padding)
+        h = min(frame.shape[0] - y, h + 2 * padding)
+        
+        return (x, y, w, h)
         
     def preprocess_frame(self, frame):
         """Convert OpenCV frame to model input"""
@@ -116,6 +255,16 @@ class LiveBananaClassifier:
     def draw_results(self, frame):
         """Draw integrated results on frame"""
         
+        # Draw bounding box if banana detected
+        if self.detected_bbox is not None:
+            x, y, w, h = self.detected_bbox
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, 'Banana Detected', (x, y - 10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        else:
+            cv2.putText(frame, 'No Banana Detected - Using Full Frame', 
+                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        
         if self.current_result is None:
             return frame
         
@@ -132,20 +281,23 @@ class LiveBananaClassifier:
         # Final classification (large and prominent)
         final_class = result['final_classification']
         color = (0, 255, 0) if final_class == "Ripe" else (0, 165, 255)
-        cv2.putText(frame, f'Result: {final_class}', (20, y_offset), 
+        cv2.putText(frame, f'Classification: {final_class}', (20, y_offset), 
                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
         y_offset += 45
         
-        # Ripeness bucket
-        bucket = result.get('ripeness_bucket', 'N/A')
-        bucket_color = (0, 255, 255) if bucket != 'N/A' else (128, 128, 128)
-        cv2.putText(frame, f'Ripeness: {bucket}', (20, y_offset), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, bucket_color, 2)
+        # Stage description (more detailed than binary classification)
+        stage = result.get('ripeness_stage', '')
+        # Extract simple label from stage (e.g., "Green (Unripe)" -> "Green")
+        stage_label = stage.split('(')[0].strip() if stage else 'N/A'
+        stage_color = (0, 255, 255) if stage != 'N/A' else (128, 128, 128)
+        cv2.putText(frame, f'Stage: {stage_label}', (20, y_offset), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, stage_color, 2)
         y_offset += 35
         
-        # Stage description
-        stage = result.get('ripeness_stage', '')
-        cv2.putText(frame, stage[:40], (20, y_offset),  # Truncate if too long
+        # Full stage description with bucket
+        bucket = result.get('ripeness_bucket', '')
+        full_stage = f'{stage_label} ({bucket})' if bucket and bucket != 'N/A' else stage
+        cv2.putText(frame, full_stage[:40], (20, y_offset),  # Truncate if too long
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
         y_offset += 40
         
@@ -207,8 +359,18 @@ class LiveBananaClassifier:
         
         return frame
     
+
     def run(self):
         """Main loop for live classification with integrated predictions"""
+
+        # MacBook Pro screen is typically 1440x900 or 1680x1050, so half would be around 720x450 or 840x525
+        # WINDOW_WIDTH = 1440 
+        # WINDOW_HEIGHT = 900
+        # WINDOW_SIZE = (WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        # cv2.namedWindow('Camera Feed', cv2.WINDOW_NORMAL)
+        # cv2.resizeWindow('Camera Feed', WINDOW_SIZE[0], WINDOW_SIZE[1])
+
         cap = cv2.VideoCapture(0)
         
         if not cap.isOpened():
@@ -238,11 +400,22 @@ class LiveBananaClassifier:
             # Process frame periodically
             if self.frame_count % self.frame_skip == 0:
                 try:
-                    # CNN prediction
-                    cnn_pred, cnn_conf = self.predict(frame)
+                    # Detect banana in frame
+                    self.detected_bbox = self.detect_banana(frame)
                     
-                    # Color analysis
-                    color_result = self.analyze_colors(frame)
+                    # If banana detected, crop to that region for analysis
+                    if self.detected_bbox is not None:
+                        x, y, w, h = self.detected_bbox
+                        analysis_frame = frame[y:y+h, x:x+w]
+                    else:
+                        # Use full frame if no banana detected
+                        analysis_frame = frame
+                    
+                    # CNN prediction on detected region
+                    cnn_pred, cnn_conf = self.predict(analysis_frame)
+                    
+                    # Color analysis on detected region
+                    color_result = self.analyze_colors(analysis_frame)
                     
                     # Integrate predictions
                     if self.integrated_mode:
