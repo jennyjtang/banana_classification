@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 ## Dataset Setup
 
-Download the Ripe–Unripe Banana Dataset from [this link] (https://data.mendeley.com/datasets/y3649cmgg6/1)
+Download the Ripe–Unripe Banana Dataset from [this link](https://data.mendeley.com/datasets/y3649cmgg6/1)
 
 Place images in:
 ```
@@ -80,7 +80,7 @@ banana_classification/
 
 ## Citation
 
-Rahman, M. M., & Al Faisal, S. M. (2021). Ripe–unripe banana dataset [Data set] (https://data.mendeley.com/datasets/y3649cmgg6/1).
+Rahman, M. M., & Al Faisal, S. M. (2021). Ripe–unripe banana dataset [Data set](https://data.mendeley.com/datasets/y3649cmgg6/1).
 
 ## AI Usage Statement
 
