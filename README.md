@@ -63,6 +63,8 @@ banana_classification/
 
 - CNN Accuracy:
 <img width="562" height="437" alt="Screenshot 2025-12-08 at 10 12 58 PM" src="https://github.com/user-attachments/assets/f03a423f-e05b-441e-9b0f-ef1c272d28a2" />
+
+
 - Integrated system combines CNN + color analysis for fine-grained ripeness assessment
 
 ### Live Classification Demo (+ Controls)
