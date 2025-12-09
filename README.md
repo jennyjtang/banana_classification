@@ -61,6 +61,15 @@ banana_classification/
 
 ## Results
 
+- Testing 4 Different CNN Models (custom vs Pretrained, Regularized + Dropout vs Un-optimized)
+  
+  
+**View comparison of models in ipynb file:**
+```bash
+CNN.Exploration.ipynb
+```
+
+
 - CNN Accuracy:
 <img width="562" height="437" alt="Screenshot 2025-12-08 at 10 12 58 PM" src="https://github.com/user-attachments/assets/f03a423f-e05b-441e-9b0f-ef1c272d28a2" />
 
