@@ -223,7 +223,7 @@ class LiveBananaClassifier:
         ripeness_pct = color_result['ripeness_percentage']
         
         cnn_says_ripe = (cnn_prediction == 1)
-        color_says_ripe = (ripeness_pct >= 50)
+        color_says_ripe = (ripeness_pct >= 30)
         
         # Integration logic
         if cnn_says_ripe and color_says_ripe:
@@ -466,7 +466,7 @@ if __name__ == "__main__":
     # Use integrated mode by default (combines CNN + color analysis)
     classifier = LiveBananaClassifier(
         model_path='banana_model.pth', 
-        frame_skip=10,
+        frame_skip=30,
         integrated_mode=True
     )
     classifier.run()
