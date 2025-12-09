@@ -1,6 +1,17 @@
-# Banana Ripeness Classification
+# Integrated Banana Ripeness Classification
 
-One-line description of what the project does.
+Automated banana ripeness detection combining CNN and color analysis for real-time assessment.
+
+## Overview
+
+Determines banana ripeness objectively to reduce food waste and improve purchasing decisions.
+
+**Key Features:**
+- CNN binary classification (Ripe/Unripe)
+- HSV color analysis for ripeness percentage (0-100%)
+- Five-stage maturity assessment
+- Real-time webcam processing
+- Integrated predictions using confidence-weighted logic
 
 ## Installation
 ```bash
@@ -54,10 +65,13 @@ banana_classification/
   [Nora insert here]
 - Integrated system combines CNN + color analysis for fine-grained ripeness assessment
 
-### Live Classification Demo
+### Live Classification Demo (+ Controls)
 <img width="797" height="591" alt="Screenshot 2025-12-08 224144" src="https://github.com/user-attachments/assets/73c38565-b06a-40a7-ac69-4a9decf7c2b2" />
 
 *System detecting a banana with ripeness assessment showing ripeness classification (ripe), ripeness bucket (30-50%), and color distribution.*
+
+- I to toggle modes
+- Q to quit
 
 ## Authors
 
