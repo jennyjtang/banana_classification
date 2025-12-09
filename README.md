@@ -1,11 +1,67 @@
-# banana_classification
-Some WIP notes:
-* Only precision and recall are calculated right now, the model isn't put into "practice"
-* Model has a harder time detecting if a banana is "ripe" than "unripe"
-<img width="515" height="218" alt="Screenshot 2025-11-16 060708" src="https://github.com/user-attachments/assets/ba389a2b-bb39-4b5f-8a1c-ed7d7f2510ec" />
+# Banana Ripeness Classification
 
+One-line description of what the project does.
 
-to do: 
+## Installation
+```bash
+git clone <repo-url>
+cd banana_classification
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-- implment RGB aspect
-- potentially connect opencv to use live detection if we can
+## Dataset Setup
+
+Download the Ripe–Unripe Banana Dataset from [source link]
+
+Place images in:
+```
+data_banana/
+├── train/images/
+├── val/images/
+└── test/images/
+```
+
+## Usage
+
+**Train the model:**
+```bash
+python main.py
+```
+
+**Run the live classification:**
+```bash
+python live_classify.py
+```
+
+## Project Structure
+```
+banana_classification/
+├── src/
+│   ├── cnn.py
+│   ├── dataset.py
+│   └── train.py
+├── main.py
+├── live_classify.py
+├── color_analyzer.py
+└── data_banana/
+```
+
+## Results
+
+- CNN Accuracy:
+  [Nora insert here]
+- Integrated system combines CNN + color analysis for fine-grained ripeness assessment
+
+### Live Classification Demo
+<img width="797" height="591" alt="Screenshot 2025-12-08 224144" src="https://github.com/user-attachments/assets/73c38565-b06a-40a7-ac69-4a9decf7c2b2" />
+*System detecting a banana with ripeness assessment showing ripeness classification (ripe), ripeness bucket (30-50%), and color distribution.*
+## Authors
+
+- Nora Amer
+- Jen (Jenny) Tang
+
+## Citation
+
+Rahman, M. M., & Al Faisal, S. M. (2021). Ripe–unripe banana dataset [Data set].
