@@ -1,24 +1,25 @@
+from torchvision import models
+from torchvision.models import ResNet18_Weights
 import torch.nn as nn
-import torch.nn.functional as F
 
-class BananaCNN_GlobalAvgPool(nn.Module):
-    """Uses Global Average Pooling before classification"""
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
-        self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
-        self.conv4 = nn.Conv2d(128, 256, 3, padding=1)
-        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))  # Global avg pooling
-        self.fc = nn.Linear(256, 2)
+def ResNet_GAP_RD():
+    """Pretrained ResNet18 with dropout for regularization"""
+    weights = ResNet18_Weights.IMAGENET1K_V1
+    model = models.resnet18(weights=weights)
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(F.relu(self.conv3(x)))
-        x = F.relu(self.conv4(x))
-        x = self.global_pool(x)  # [batch, 256, 1, 1]
-        x = x.view(x.size(0), -1)  # [batch, 256]
-        x = self.fc(x)
-        return x
+    # Freeze early layers (speeds up training, focuses on fine-tuning later layers)
+    for param in model.parameters():
+        param.requires_grad = False
+    for param in model.layer4.parameters():  # Unfreeze last layer for fine-tuning
+        param.requires_grad = True
+
+    # Replace FC with dropout + new FC
+    num_features = model.fc.in_features
+    model.fc = nn.Sequential(
+        nn.Dropout(0.5),  # Add dropout (50% probability)
+        nn.Linear(num_features, 2)
+    )
+    return model
+
+# Alias for backwards compatibility
+BananaCNN = ResNet_GAP_RD
