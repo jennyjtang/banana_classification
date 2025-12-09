@@ -31,18 +31,30 @@ class BananaDataset(Dataset):
         return image, label
 
 def get_dataloaders(data_dir="data_banana", batch_size=32):
-    transform = transforms.Compose([
-        transforms.Resize((224,224)),
+    """Create dataloaders for training, validation, and test sets"""
+    # Data augmentation for training
+    train_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
         transforms.ToTensor(),
-        transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
+    # Standard transform for val/test
+    eval_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    train_ds = BananaDataset(os.path.join(data_dir, "train/images"), transform=transform)
-    val_ds   = BananaDataset(os.path.join(data_dir, "val/images"), transform=transform)
-    test_ds  = BananaDataset(os.path.join(data_dir, "test/images"), transform=transform)
+    train_ds = BananaDataset(os.path.join(data_dir, "train/images"), transform=train_transform)
+    val_ds = BananaDataset(os.path.join(data_dir, "val/images"), transform=eval_transform)
+    test_ds = BananaDataset(os.path.join(data_dir, "test/images"), transform=eval_transform)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    val_loader   = DataLoader(val_ds, batch_size=batch_size)
-    test_loader  = DataLoader(test_ds, batch_size=batch_size)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=2)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=2)
 
     return train_loader, val_loader, test_loader

@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from torchvision import transforms
 from PIL import Image
-from src.cnn import BananaCNN
+from src.cnn import ResNet_GAP_RD
 from color_analyzer import BananaColorAnalyzer
 
 class LiveBananaClassifier:
@@ -22,10 +22,11 @@ class LiveBananaClassifier:
         
         # Results storage
         self.current_result = None
+        self.detected_bbox = None  # Store detected banana bounding box
         
-        # Load the trained CNN model
+        # Load the trained ResNet model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = BananaCNN()
+        self.model = ResNet_GAP_RD()
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.to(self.device)
         self.model.eval()
