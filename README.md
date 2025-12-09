@@ -4,7 +4,7 @@ One-line description of what the project does.
 
 ## Installation
 ```bash
-git clone <repo-url>
+git clone https://github.com/jennyjtang/banana_classification
 cd banana_classification
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
@@ -56,7 +56,9 @@ banana_classification/
 
 ### Live Classification Demo
 <img width="797" height="591" alt="Screenshot 2025-12-08 224144" src="https://github.com/user-attachments/assets/73c38565-b06a-40a7-ac69-4a9decf7c2b2" />
+
 *System detecting a banana with ripeness assessment showing ripeness classification (ripe), ripeness bucket (30-50%), and color distribution.*
+
 ## Authors
 
 - Nora Amer
@@ -65,3 +67,7 @@ banana_classification/
 ## Citation
 
 Rahman, M. M., & Al Faisal, S. M. (2021). Ripe–unripe banana dataset [Data set].
+
+## AI Usage Statement
+
+AI tools (Claude) were used for conceptual understanding, debugging assistance, and implementation feedback. All core design decisions and experimental work were conducted by the project team.
